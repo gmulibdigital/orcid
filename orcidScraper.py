@@ -38,12 +38,12 @@ token = r.json()['access_token']
 
 # With the token in hand, we can now execute queries against the public api. Some documentation on how to format a search query can be found at [http://members.orcid.org/api/tutorial-searching-data-using-api](http://members.orcid.org/api/tutorial-searching-data-using-api)
 
-# In[5]:
+# In[53]:
 
-search = '3298+AND+MASON'
+search = '3298+AND+MASON+OR+email:*@gmu.edu+OR+email:*@masonlive.gmu.edu'
 
 
-# In[6]:
+# In[54]:
 
 # This is a helper function to get the number of search results for pagination purposes.
 
@@ -56,7 +56,7 @@ def getNumberofResults(search):
     return(r.json()['orcid-search-results']['num-found'])
 
 
-# In[7]:
+# In[55]:
 
 # This is the search function, which is called in the `queryOrcidApi` function below.
 
@@ -69,7 +69,7 @@ def orcidSearch(search, token, start, rows):
     return(r)
 
 
-# In[8]:
+# In[56]:
 
 # This is the compiled search function which takes the token from above and the search string. The API only return 100
 # results at a time, so the function first determines if the total is under 100. If yes, it pull them all. If it is
@@ -79,29 +79,30 @@ def orcidSearch(search, token, start, rows):
 def queryOrcidApi(search, token):
     num_results = getNumberofResults(search)
     print('{} search results found'.format(num_results))
+    results = []
     if num_results < 100:
         start = 0
         rows = num_results
-        return (orcidSearch(search, token, start, rows))
+        r = orcidSearch(search, token, start, rows)
+        results.append(r.json())
     else:
-        results = []
         for i in range(math.ceil(num_results/100)): 
             start = i * 100
             print('Pulling records starting from {}'.format(start))
             rows = 100 
             r = orcidSearch(search, token, start, rows)
             results.append(r.json())
-        return(results)
+    return(results)
 
 
-# In[9]:
+# In[57]:
 
 results = queryOrcidApi(search, token)
 
 
 # With all of the search results in hand, we can now create a single list of the individual result dictionaries.
 
-# In[10]:
+# In[49]:
 
 searchResults = []
 
@@ -111,14 +112,14 @@ for each in results:
         searchResults.append(blip)
 
 
-# In[11]:
+# In[50]:
 
 len(searchResults)
 
 
 # Finally, we can write the results to a CSV file. Some of the results (3) did not include the family and given name in the public information. As a result, here I am checking for these fields of interest and including a blank value if it is not provided. The error message will alert if additional missing values are encountered.
 
-# In[12]:
+# In[51]:
 
 with open('{}-orcid-output.csv'.format(str(date.today())), 'wt') as f:
     writer = csv.writer(f)
@@ -140,4 +141,9 @@ with open('{}-orcid-output.csv'.format(str(date.today())), 'wt') as f:
             print('There was an error processing record {}'.format(searchResults.index(each)))
             
         writer.writerow([family_name, given_name, identifier, uri])
+
+
+# In[ ]:
+
+
 
